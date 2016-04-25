@@ -114,6 +114,8 @@ public:
     //#ifndef NDEBUG
     DeadNode        = 1 << 15,   // This node is dead and should not be pointed to
     //#endif
+    
+    SyscallTableNode = 1 << 16, // This node points to the system call table
 
     Composition = AllocaNode | HeapNode | GlobalNode | UnknownNode
   };
@@ -123,7 +125,8 @@ public:
   /// with a value of 0 for their NodeType.
   ///
 private:
-  unsigned short NodeType;
+  //unsigned short NodeType;
+  unsigned int NodeType;
 public:
 
   /// DSNode ctor - Create a node of the specified type, inserting it into the
@@ -387,6 +390,7 @@ public:
   bool isIntToPtrNode()   const { return NodeType & IntToPtrNode;  }
   bool isPtrToIntNode()   const { return NodeType & PtrToIntNode;  }
   bool isVAStartNode()    const { return NodeType & VAStartNode;   }
+  bool isSyscallTableNode() const { return NodeType & SyscallTableNode; }
 
   DSNode* setAllocaMarker()     { NodeType |= AllocaNode;     return this; }
   DSNode* setHeapMarker()       { NodeType |= HeapNode;       return this; }
@@ -403,6 +407,7 @@ public:
   DSNode* setIntToPtrMarker()   { NodeType |= IntToPtrNode;   return this; }
   DSNode* setPtrToIntMarker()   { NodeType |= PtrToIntNode;   return this; }
   DSNode* setVAStartMarker()    { NodeType |= VAStartNode;    return this; }
+  DSNode* setSyscallTableMarker() { NodeType |= SyscallTableNode; return this; }
 
   void makeNodeDead() {
     Globals.clear();

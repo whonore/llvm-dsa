@@ -96,6 +96,7 @@ static std::string getCaption(const DSNode *N, const DSGraph *G) {
     if (NodeType & DSNode::IntToPtrNode     ) OS << "P";
     if (NodeType & DSNode::PtrToIntNode     ) OS << "2";
     if (NodeType & DSNode::VAStartNode      ) OS << "V";
+    if (NodeType & DSNode::SyscallTableNode ) OS << "T";
 
 #ifndef NDEBUG
     if (NodeType & DSNode::DeadNode       ) OS << "<dead>";

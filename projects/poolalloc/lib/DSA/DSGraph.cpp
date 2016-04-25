@@ -723,6 +723,41 @@ static void propagateExternal(DSGraph * G, DenseSet<DSNode *> & processedNodes) 
 }
 
 //
+// Method: markSyscallTableNode()
+//
+// Description:
+//  Marks the specified node, and all that's reachable from it, as the
+//  system call table. It uses 'processedNodes' to track recursion.
+//
+static void markSyscallTableNode(DSNode *N, DenseSet<DSNode *> &processedNodes) {
+  // Stop recursion if no node, or if node already processed
+  if (N == 0 || processedNodes.count(N)) return;
+
+  processedNodes.insert(N);
+
+  // Actually mark the node
+  N->setSyscallTableMarker();
+
+  // Recursively process children...
+  for (DSNode::edge_iterator ii = N->edge_begin(), ee = N->edge_end();
+       ii != ee; ++ii)
+    markSyscallTableNode(ii->second.getNode(), processedNodes);
+}
+
+//
+// Method: markSyscallTableNodes
+//
+// Description:
+//  A wrapper for markSyscallTableNode().
+//
+void DSGraph::markSyscallTableNodes(DSNode *N) {
+  DenseSet<DSNode *> processedNodes;
+
+  // Mark node and all reachable children
+  markSyscallTableNode(N, processedNodes);
+}
+
+//
 // Method: computeIntPtrFlags()
 //
 // Description:

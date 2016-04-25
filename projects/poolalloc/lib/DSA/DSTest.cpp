@@ -368,6 +368,7 @@ static std::string getFlags(DSNode *N) {
     if (NodeType & DSNode::IntToPtrNode     ) flags += "P";
     if (NodeType & DSNode::PtrToIntNode     ) flags += "2";
     if (NodeType & DSNode::VAStartNode      ) flags += "V";
+    if (NodeType & DSNode::SyscallTableNode ) flags += "T";
   }
 
   return flags;

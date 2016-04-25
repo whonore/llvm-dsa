@@ -520,6 +520,9 @@ public:
   };
   void computeExternalFlags(unsigned Flags);
 
+  // Mark node and all reachable children as the syscall table.
+  void markSyscallTableNodes(DSNode *N);
+
   // removeDeadNodes - Use a reachability analysis to eliminate subgraphs that
   // are unreachable.  This often occurs because the data structure doesn't
   // "escape" into it's caller, and thus should be eliminated from the caller's

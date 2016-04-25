@@ -192,6 +192,25 @@ public:
   }
 };
 
+/// SyscallTablePass - This analysis marks references to the system call
+/// table with a flag.
+///
+class SyscallTablePass : public DataStructures {
+public:
+  static char ID;
+  SyscallTablePass() : DataStructures(ID, "syscalltbl.") {}
+  ~SyscallTablePass() { releaseMemory(); }
+
+  virtual bool runOnModule(Module &M);
+
+  /// getAnalysisUsage - This obviously provides a data structure graph.
+  ///
+  virtual void getAnalysisUsage(AnalysisUsage &AU) const {
+    AU.addRequired<LocalDataStructures>();
+    AU.setPreservesAll();
+  }
+};
+
 // StdLibDataStructures - This analysis recognizes common standard c library
 // functions and generates graphs for them.
 class StdLibDataStructures : public DataStructures {
@@ -396,6 +415,25 @@ public:
     :TDDataStructures(ID, "eqtd.", true)
   {}
   ~EQTDDataStructures();
+};
+
+/// Malicious - Analysis that searches for potentially malicious modifications
+/// to kernel data structures.
+///
+class Malicious : public DataStructures {
+public:
+  static char ID;
+  Malicious() : DataStructures(ID, "malicious.") {}
+  ~Malicious() { releaseMemory(); }
+
+  virtual bool runOnModule(Module &M);
+
+  /// getAnalysisUsage - This obviously provides a data structure graph.
+  ///
+  virtual void getAnalysisUsage(AnalysisUsage &AU) const {
+    AU.addRequired<BUDataStructures>();
+    AU.setPreservesAll();
+  }
 };
 
 } // End llvm namespace

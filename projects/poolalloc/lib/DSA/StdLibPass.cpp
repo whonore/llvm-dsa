@@ -548,9 +548,9 @@ StdLibDataStructures::processRuntimeCheck (Module & M,
 bool
 StdLibDataStructures::runOnModule (Module &M) {
   //
-  // Get the results from the local pass.
+  // Get the results from the sycall table pass.
   //
-  init (&getAnalysis<LocalDataStructures>(), true, true, false, false);
+  init (&getAnalysis<SyscallTablePass>(), true, true, false, false);
   AllocWrappersAnalysis = &getAnalysis<AllocIdentify>();
 
   //
