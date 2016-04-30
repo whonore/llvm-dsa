@@ -228,7 +228,7 @@ public:
   /// getAnalysisUsage - This obviously provides a data structure graph.
   ///
   virtual void getAnalysisUsage(AnalysisUsage &AU) const {
-    AU.addRequired<LocalDataStructures>();
+    AU.addRequired<SyscallTablePass>();
     AU.addRequired<AllocIdentify>();
     AU.setPreservesAll();
   }
