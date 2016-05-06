@@ -18,6 +18,7 @@
 #include "dsa/DSGraph.h"
 
 #include "llvm/ADT/Statistic.h"
+#include "llvm/IR/InstIterator.h"
 #include "llvm/IR/Module.h"
 #include "llvm/Support/Debug.h"
 
@@ -38,41 +39,37 @@ bool Malicious::runOnModule(Module &M) {
 
     // Skip functions with no DSGraph.
     if (!Graphs.hasDSGraph(*F)) {
-      DEBUG(errs() << "\nNone for " << F->getName() << "\n");
       continue;
     }
 
-    DEBUG(errs() << "\n" << F->getName() << "\n");
     DSGraph *DSG = Graphs.getDSGraph(*F);
 
     // Check for instructions that write to memory and with a target that 
     // is marked by the system call table flag.
-    Function::iterator BI = FI->begin(), BE = FI->end();
-    for (; BI != BE; ++BI) {
-      BasicBlock::iterator II = BI->begin(), IE = BI->end();
-      for (; II != IE; ++II) {
-        Instruction *I = &*II;
+    inst_iterator II = inst_begin(*F), IE = inst_end(*F);
+    for (; II != IE; ++II) {
+      Instruction *I = &*II;
 
-        if (I->mayWriteToMemory()) {
-          DEBUG(errs() << *I << "\n");
-          // TODO: consider other instructions as well
-          if (StoreInst *SI = dyn_cast<StoreInst>(I)) {
-            Value *target = SI->getPointerOperand();
-            DSNode *N = DSG->getNodeForValue(target).getNode();
+      if (I->mayWriteToMemory()) {
+        DEBUG(errs() << "writes to mem " << *I << "\n");
+        // TODO: Only considers writes by store instructions. Should
+        // also work for calls, atomics, etc.
+        if (StoreInst *SI = dyn_cast<StoreInst>(I)) {
+          Value *target = SI->getPointerOperand();
+          DSNode *N = DSG->getNodeForValue(target).getNode();
 
-            // Skip targets without nodes
-            if (N == NULL) {
-              DEBUG(errs() << "Can't find\n");
-              continue;
-            }
+          // Skip targets without nodes.
+          if (!N) {
+            continue;
+          }
 
-            if (N->isSyscallTableNode()) {
-              errs() << "\t" 
-                     << *I 
-                     << " in " 
-                     << F->getName() 
-                     << " is potentially dangerous\n";
-            }
+          // Report potentially malicious instructions.
+          if (N->isSyscallTableNode()) {
+            errs() << "\t" 
+                   << *I 
+                   << " in " 
+                   << F->getName() 
+                   << " is potentially dangerous\n";
           }
         }
       }

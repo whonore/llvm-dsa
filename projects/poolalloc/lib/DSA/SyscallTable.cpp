@@ -120,10 +120,31 @@ static void trace_back(Value *V, std::vector<Instruction *> &marked) {
   }
 }
 
+// Check whether an instruction points to a system call global variable.
+bool SyscallTablePass::points_to_syscall(Instruction *I) {
+  DSGraph *G = getOrCreateGraph(I->getParent()->getParent());
+  DSNode *N = G->getScalarMap()[I].getNode();
+
+  if (N) {
+    // Check every global to see if is a system call.
+    DSNode::globals_iterator GI = N->globals_begin(), GE = N->globals_end();
+    for (; GI != GE; ++GI) {
+      const GlobalValue *GV = *GI;
+
+      if (syscall_names.count(GV->getName())) {
+        DEBUG(errs() << "points_to_syscall:\n\t" << *I << "\n");
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
 // Search for comparisons to system calls.
-// TODO: comparison doesn't have to be to a constant. Maybe mark casts first
-// then check for compare?
-static void find_table(Module &M, std::vector<Instruction *> &marked) {
+// TODO: Only considers direct comparisons to the system call. Will not recognize
+// indirect comparisons (xor for example).
+void SyscallTablePass::find_table(Module &M, std::vector<Instruction *> &marked) {
   Module::iterator FI = M.begin(), FE = M.end();
   for (; FI != FE; ++FI) {
     Function *F = &*FI;
@@ -133,13 +154,24 @@ static void find_table(Module &M, std::vector<Instruction *> &marked) {
       // Is it a compare?
       if (CmpInst *I = dyn_cast<CmpInst>(&*II)) {
         for (unsigned int OI = 0; OI < I->getNumOperands() ; ++OI) {
+          Value *OV = I->getOperand(OI);
+
           // Is this operand a system call?
-          if (ConstantExpr *O = dyn_cast<ConstantExpr>(I->getOperand(OI))) {
+          if (ConstantExpr *O = dyn_cast<ConstantExpr>(OV)) {
+            // Is it a constant reference to a system call?
             std::string name = O->stripPointerCasts()->getName();
 
             // Follow the other operand back and mark it.
             if (syscall_names.count(name) != 0) {
-              DEBUG(errs() << "find_table:\n\t" << *I << "\n");
+              DEBUG(errs() << "find_table const:\n\t" << *I << "\n");
+              Value *other = I->getOperand((OI + 1) % 2);
+              trace_back(other, marked);
+            }
+          }
+          else if (Instruction *O = dyn_cast<Instruction>(OV)) {
+            // Does it point to a global system call?
+            if (points_to_syscall(O)) {
+              DEBUG(errs() << "find_table ref:\n\t" << *I << "\n");
               Value *other = I->getOperand((OI + 1) % 2);
               trace_back(other, marked);
             }
